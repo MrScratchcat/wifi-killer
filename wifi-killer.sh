@@ -108,3 +108,4 @@ if [ -n "$channel" ]; then
 else
     echo "Network '$selected_network' not found or unable to retrieve channel information."
 fi
+sudo iwconfig $selected_wifi_card mode managed
