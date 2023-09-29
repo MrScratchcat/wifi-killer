@@ -106,28 +106,22 @@ fi
 channel=$(nmcli -f SSID,CHAN dev wifi list | grep -w "$selected_network" | awk '{print $2}')
 clear
 
-# Use nmcli to list WiFi networks on the specified channel
-echo "Other WiFi networks on channel $channel:"
-nmcli dev wifi list | grep -E "(^|\s)$channel\s" | sed 's/^\s*//;s/\*//'
+# List available Wi-Fi networks on the selected channel
+echo "Please wait for available Wi-Fi networks on channel $channel:"
+nmcli -f SSID,CHAN dev wifi list | tail -n +2 | awk -v channel="$channel" '$2 == channel {print $1}'
 
+ssid_list=$(nmcli -f SSID,CHAN dev wifi list | tail -n +2 | awk -v channel="$channel" '$2 == channel {print $1}')
 
-while true; do
-    read -p "Do you want to continue (y/n)? " choice
-    case "$choice" in
-        [Yy]* )
-            # Add your code here for when the user chooses 'y'
-            echo "Continuing..."
-            break
-            ;;
-        [Nn]* )
-            # Add your code here for when the user chooses 'n'
-            echo "Exiting..."
-            exit
-            ;;
-        * )
-            echo "Please enter 'y' or 'n'."
-            ;;
-    esac
+if [ $(echo "$ssid_list" | wc -l) -gt 1 ]; then
+  read -p "There are multiple Wi-Fi networks on channel $channel. Do you want to continue? (y/n) " choice
+  if [ "$choice" != "y" ]; then
+    exit 1
+  fi
+fi
+
+for ssid in $ssid_list; do
+  nmcli dev wifi disconnect
+  nmcli dev wifi connect "$ssid"
 done
 
 # Set the wireless interface to monitor mode
