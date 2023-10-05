@@ -2,9 +2,7 @@
 if [ "$(id -u)" -ne 0 ]; then
 	echo "This script must be run as root"
 	exit 1
-fi
-
-clear
+fi                                                                                 
 
 # Function to check if a package is installed
 check_package() {
@@ -13,26 +11,34 @@ check_package() {
 
 # Check if mdk4 is installed
 if ! check_package mdk4; then
-    echo "mdk4 is not installed. Installing..."
+    echo "mdk4 is not installed."
+    echo "would you like to install it? (y/n)"
+    read choice 
+    if [ "$choice" != "y" ]; then  
+        echo "script cant run without mdk4"
+        exit 1
+    fi
     sudo apt update
     sudo apt install -y mdk4
     echo "mdk4 has been installed."
 else
     echo "mdk4 is already installed."
 fi
-sleep 1
-# Check if aircrack-ng is installed
-if ! check_package aircrack-ng; then
-    echo "aircrack-ng is not installed. Installing..."
-    sudo apt update
-    sudo apt install -y aircrack-ng
-    echo "aircrack-ng has been installed."
-else
-    echo "aircrack-ng is already installed."
-fi
-sleep 1
 
 clear
+echo "                  ███     ██████   ███             █████       ███  ████  ████                    "
+echo "                 ░░░     ███░░███ ░░░             ░░███       ░░░  ░░███ ░░███                    "
+echo " █████ ███ █████ ████   ░███ ░░░  ████             ░███ █████ ████  ░███  ░███   ██████  ████████ "
+echo "░░███ ░███░░███ ░░███  ███████   ░░███  ██████████ ░███░░███ ░░███  ░███  ░███  ███░░███░░███░░███"
+echo " ░███ ░███ ░███  ░███ ░░░███░     ░███ ░░░░░░░░░░  ░██████░   ░███  ░███  ░███ ░███████  ░███ ░░░ "
+echo " ░░███████████   ░███   ░███      ░███             ░███░░███  ░███  ░███  ░███ ░███░░░   ░███     "
+echo "  ░░████░████    █████  █████     █████            ████ █████ █████ █████ █████░░██████  █████    "
+echo "   ░░░░ ░░░░    ░░░░░  ░░░░░     ░░░░░            ░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░     "
+                                                                                                  
+                                                                                                  
+                                                                                                  
+echo "made by MrScratchcat using mdk4"
+echo ""
 echo "Please pick a WiFi Card that supports monitor mode:"
 
 
