@@ -109,7 +109,7 @@ else
 fi
 
 # Get the channel number for the selected network
-channel=$(nmcli -f SSID,CHAN dev wifi list | grep -w "$selected_network" | awk '{print $2}')
+channel=$(nmcli -f SSID,CHAN dev wifi list | grep -w "$selected_network" | awk '{print $2}' | head -n 1)
 clear
 
 # List available Wi-Fi networks on the selected channel
