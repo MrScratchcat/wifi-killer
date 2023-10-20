@@ -91,7 +91,7 @@ for network in $wifi_list; do
 done
 
 # Prompt the user to select a network by number
-read -p "Enter the number of the WiFi network you want to check: " selected_num
+read -p "Enter the number of the WiFi network you want to attack: " selected_num
 
 # Validate the selected number
 if ! [[ "$selected_num" =~ ^[0-9]+$ ]]; then
